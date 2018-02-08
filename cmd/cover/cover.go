@@ -36,6 +36,9 @@ Write out an HTML file instead of launching a web browser:
 Display coverage percentages to stdout for each function:
 	go tool cover -func=c.out
 
+Display coverage percentages to stdout for each file:
+	go tool cover -file=c.out
+
 Finally, to generate modified source code with coverage annotations
 (what go test -cover does):
 	go tool cover -mode=set -var=CoverageVariableName program.go
@@ -45,7 +48,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, usageMessage)
 	fmt.Fprintln(os.Stderr, "Flags:")
 	flag.PrintDefaults()
-	fmt.Fprintln(os.Stderr, "\n  Only one of -html, -func, or -mode may be set.")
+	fmt.Fprintln(os.Stderr, "\n  Only one of -html, -func, -file, or -mode may be set.")
 	os.Exit(2)
 }
 
@@ -55,9 +58,10 @@ var (
 	output  = flag.String("o", "", "file for output; default: stdout")
 	htmlOut = flag.String("html", "", "generate HTML representation of coverage profile")
 	funcOut = flag.String("func", "", "output coverage profile information for each function")
+	fileOut = flag.String("file", "", "output coverage profile information for each file")
 )
 
-var profile string // The profile to read; the value of -html or -func
+var profile string // The profile to read; the value of -html, -func or -file
 
 var counterStmt func(*File, ast.Expr) ast.Stmt
 
@@ -91,8 +95,10 @@ func main() {
 	// Output HTML or function coverage information.
 	if *htmlOut != "" {
 		err = htmlOutput(profile, *output)
-	} else {
+	} else if *funcOut != "" {
 		err = funcOutput(profile, *output)
+	} else {
+		err = fileOutput(profile, *output)
 	}
 
 	if err != nil {
